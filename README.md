@@ -12,7 +12,7 @@
 ## نصب سریع
 
 ```bash
-bash <(curl -fsSL https://github.com/xpersian/n8n-installer/releases/download/update/n8n.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/xpersian/n8n-installer/main/n8n.sh)
 ```
 ![33](https://github.com/Ptechgithub/configs/blob/main/media/33.jpg)
 
