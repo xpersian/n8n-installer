@@ -38,10 +38,11 @@ show_menu() {
 	echo -e "${YELLOW}╠══════════════════════════════════════════╣"
 	echo -e "${YELLOW}║ 1️⃣  Install n8n                          ║${RESET}"
 	echo -e "${YELLOW}║ 2️⃣  Uninstall n8n                        ║${RESET}"
-	echo -e "${YELLOW}║ 3️⃣  Exit                                 ║${RESET}"
+	echo -e "${YELLOW}║ 3️⃣  Update n8n (Pull latest stable)      ║${RESET}"
+	echo -e "${YELLOW}║ 4️⃣  Exit                                 ║${RESET}"
 	echo -e "${YELLOW}╚══════════════════════════════════════════╝${RESET}"
 	echo
-	read -p "📌 Select an option [1-3]: " OPTION
+	read -p "📌 Select an option [1-4]: " OPTION
 }
 
 # Install n8n
@@ -67,7 +68,7 @@ install_n8n() {
 		success "Docker is already installed 🐳"
 	fi
 
-	# Install Docker
+	# Install Docker Compose
 	if ! command -v docker-compose &>/dev/null; then
 		info "Docker Compose not found. Installing Docker Compose 🔧..."
 		LATEST_COMPOSE=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
@@ -246,14 +247,42 @@ uninstall_n8n() {
 	fi
 }
 
+# Update n8n
+update_n8n() {
+	if [ ! -d "n8n-docker" ]; then
+		line
+		error_exit "n8n is not installed. Please install it first."
+	fi
+
+	line
+	info "Updating n8n to the latest stable version... 🔄"
+
+	cd n8n-docker || error_exit "Failed to enter n8n-docker directory."
+
+	if ! command -v docker-compose &>/dev/null; then
+		error_exit "Docker Compose is required for update. Please install it."
+	fi
+
+	# Pull the latest n8n image (and traefik if present)
+	docker-compose pull n8n || error_exit "Failed to pull n8n image."
+
+	# Restart services to apply the update
+	docker-compose up -d || error_exit "Failed to restart services after update."
+
+	line
+	success "n8n has been updated to the latest stable version! 🚀"
+	line
+}
+
 # Main
 show_menu
 case "$OPTION" in
 1) install_n8n ;;
 2) uninstall_n8n ;;
-3)
+3) update_n8n ;;
+4)
 	echo "👋 Goodbye!"
 	exit 0
 	;;
-*) echo "❗ Invalid option. Please select 1, 2, or 3." ;;
+*) echo "❗ Invalid option. Please select 1, 2, 3, or 4." ;;
 esac
