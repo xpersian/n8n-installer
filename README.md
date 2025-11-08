@@ -8,13 +8,15 @@
 - پشتیبانی کامل از دامنه + SSL (Let's Encrypt)
 - رابط تعاملی ساده برای نصب یا حذف n8n
 - قابلیت اجرا روی IP یا دامنه
+- قابلیت بروز رسانی 
 
 ## نصب سریع
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/xpersian/n8n-installer/main/n8n.sh)
 ```
-![33](https://github.com/Ptechgithub/configs/blob/main/media/33.jpg)
+<img width="459" height="232" alt="image" src="https://github.com/user-attachments/assets/9ef12c94-4ec8-4eb4-94d1-d0b9d3e3c8da" />
+
 
 ## پیش‌نیازها
 
