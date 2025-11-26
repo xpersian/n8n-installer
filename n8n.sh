@@ -1,4 +1,3 @@
-```bash
 #!/bin/bash
 
 set -e
@@ -265,8 +264,8 @@ update_n8n() {
 		error_exit "Docker Compose is required for update. Please install it."
 	fi
 
-	# Pull the latest n8n image (and traefik if present)
-	docker-compose pull n8n || error_exit "Failed to pull n8n image."
+	# Pull all images
+	docker-compose pull || error_exit "Failed to pull images."
 
 	# Restart services to apply the update
 	docker-compose up -d || error_exit "Failed to restart services after update."
@@ -290,8 +289,11 @@ setup_cron_update() {
 	line
 	info "Setting up automatic n8n updates with cron... ⏰"
 
-	# Check if cron job already exists
-	if crontab -l 2>/dev/null | grep -q "n8n-docker.*docker-compose pull"; then
+	# Get absolute path to installation directory
+	INSTALL_DIR=$(realpath n8n-docker)
+
+	# Check if cron job already exists for this directory
+	if crontab -l 2>/dev/null | grep -q "$INSTALL_DIR.*docker-compose pull"; then
 		line
 		success "Automatic update cron job is already set up. Skipping."
 		return
@@ -321,30 +323,31 @@ setup_cron_update() {
 	esac
 
 	# Create the cron job entry
-	CRON_JOB="$CRON_SCHEDULE cd /root/n8n-docker && docker-compose pull n8n && docker-compose up -d > /dev/null 2>&1"
+	CRON_JOB="$CRON_SCHEDULE cd $INSTALL_DIR && docker-compose pull && docker-compose up -d > /dev/null 2>&1"
 
 	# Add to crontab
 	(crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab - || error_exit "Failed to update crontab."
 
 	line
 	success "Automatic update cron job set up successfully!"
-	echo -e "${CYAN}Schedule: $CRON_SCHEDULE (n8n-docker update)${RESET}"
+	echo -e "${CYAN}Schedule: $CRON_SCHEDULE (n8n-docker update in $INSTALL_DIR)${RESET}"
 	info "To view cron jobs: crontab -l"
 	info "To remove: crontab -e and delete the line"
 	line
 }
 
-# Main
-show_menu
-case "$OPTION" in
-1) install_n8n ;;
-2) uninstall_n8n ;;
-3) update_n8n ;;
-4) setup_cron_update ;;
-5)
-	echo "👋 Goodbye!"
-	exit 0
-	;;
-*) echo "❗ Invalid option. Please select 1, 2, 3, 4, or 5." ;;
-esac
-```
+# Main loop
+while true; do
+	show_menu
+	case "$OPTION" in
+	1) install_n8n ;;
+	2) uninstall_n8n ;;
+	3) update_n8n ;;
+	4) setup_cron_update ;;
+	5)
+		echo "👋 Goodbye!"
+		exit 0
+		;;
+	*) echo "❗ Invalid option. Please select 1, 2, 3, 4, or 5." ;;
+	esac
+done
