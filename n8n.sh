@@ -1,3 +1,4 @@
+```bash
 #!/bin/bash
 
 set -e
@@ -39,10 +40,11 @@ show_menu() {
 	echo -e "${YELLOW}║ 1️⃣  Install n8n                          ║${RESET}"
 	echo -e "${YELLOW}║ 2️⃣  Uninstall n8n                        ║${RESET}"
 	echo -e "${YELLOW}║ 3️⃣  Update n8n (Pull latest stable)      ║${RESET}"
-	echo -e "${YELLOW}║ 4️⃣  Exit                                 ║${RESET}"
+	echo -e "${YELLOW}║ 4️⃣  Setup Automatic Updates (Cron)       ║${RESET}"
+	echo -e "${YELLOW}║ 5️⃣  Exit                                 ║${RESET}"
 	echo -e "${YELLOW}╚══════════════════════════════════════════╝${RESET}"
 	echo
-	read -p "📌 Select an option [1-4]: " OPTION
+	read -p "📌 Select an option [1-5]: " OPTION
 }
 
 # Install n8n
@@ -274,15 +276,75 @@ update_n8n() {
 	line
 }
 
+# Setup Automatic Updates with Cron
+setup_cron_update() {
+	if [ ! -d "n8n-docker" ]; then
+		line
+		error_exit "n8n is not installed. Please install it first."
+	fi
+
+	if [ "$EUID" -ne 0 ]; then
+		error_exit "Please run this script as root to manage cron jobs ⚠️"
+	fi
+
+	line
+	info "Setting up automatic n8n updates with cron... ⏰"
+
+	# Check if cron job already exists
+	if crontab -l 2>/dev/null | grep -q "n8n-docker.*docker-compose pull"; then
+		line
+		success "Automatic update cron job is already set up. Skipping."
+		return
+	fi
+
+	# Ask for schedule (default: weekly on Sunday at 2 AM)
+	echo "Select update frequency:"
+	echo "1. Daily (at 2 AM)"
+	echo "2. Weekly (Sunday at 2 AM)"
+	echo "3. Monthly (1st day at 2 AM)"
+	read -p "Enter choice [1-3, default 2]: " FREQ_CHOICE
+	FREQ_CHOICE=${FREQ_CHOICE:-2}
+
+	case $FREQ_CHOICE in
+		1)
+			CRON_SCHEDULE="0 2 * * *"
+			;;
+		2)
+			CRON_SCHEDULE="0 2 * * 0"
+			;;
+		3)
+			CRON_SCHEDULE="0 2 1 * *"
+			;;
+		*)
+			CRON_SCHEDULE="0 2 * * 0"
+			;;
+	esac
+
+	# Create the cron job entry
+	CRON_JOB="$CRON_SCHEDULE cd /root/n8n-docker && docker-compose pull n8n && docker-compose up -d > /dev/null 2>&1"
+
+	# Add to crontab
+	(crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab - || error_exit "Failed to update crontab."
+
+	line
+	success "Automatic update cron job set up successfully!"
+	echo -e "${CYAN}Schedule: $CRON_SCHEDULE (n8n-docker update)${RESET}"
+	info "To view cron jobs: crontab -l"
+	info "To remove: crontab -e and delete the line"
+	line
+}
+
 # Main
 show_menu
 case "$OPTION" in
 1) install_n8n ;;
 2) uninstall_n8n ;;
 3) update_n8n ;;
-4)
+4) setup_cron_update ;;
+5)
 	echo "👋 Goodbye!"
 	exit 0
 	;;
-*) echo "❗ Invalid option. Please select 1, 2, 3, or 4." ;;
+*) echo "❗ Invalid option. Please select 1, 2, 3, 4, or 5." ;;
 esac
+```
